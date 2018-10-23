@@ -46,20 +46,23 @@ exports.check = function check (repo, opts, cb) {
     var branch = results[0]
     var ahead = results[1]
     var stashes = results[2]
-    var status = results[3]
+    var status = results[3];
+    var behind = results[4];
 
     cb(null, {
       branch: branch,
       ahead: ahead,
       dirty: status.dirty,
       untracked: status.untracked,
-      stashes: stashes
+      stashes: stashes,
+      behind: behind
     })
   })
 
   exports.branch(repo, opts, next())
   exports.ahead(repo, opts, next())
   exports.stashes(repo, opts, next())
+  exports.behind(repo, opts, next());
 
   status(repo, opts, next())
 }
@@ -96,17 +99,36 @@ exports.branch = function branch (repo, opts, cb) {
   })
 }
 
-exports.ahead = function ahead (repo, opts, cb) {
+exports.ahead = function ahead(repo, opts, cb) {
   if (typeof opts === 'function') return exports.ahead(repo, {}, opts)
   opts = opts || {}
 
-  exec('git show-ref >' + nullPath + ' 2>&1 && git rev-list HEAD --not --remotes', {cwd: repo, maxBuffer: opts.maxBuffer}, function (err, stdout, stderr) {
+  exec('git show-ref >' + nullPath + ' 2>&1 && git rev-list HEAD --not --remotes', { cwd: repo, maxBuffer: opts.maxBuffer }, function (err, stdout, stderr) {
     if (err) {
       if (err.message === 'stdout maxBuffer exceeded') return cb(err)
       return cb(null, NaN) // depending on the state of the git repo, the command might return non-0 exit code
     }
     stdout = stdout.trim()
     cb(null, !stdout ? 0 : parseInt(stdout.split(EOL).length, 10))
+  })
+}
+
+exports.behind = function behind(repo, opts, cb) {
+  if (typeof opts === 'function') return exports.behind(repo, {}, opts);
+  opts = opts || {}
+
+  exec('git status -sb', { cwd: repo, maxBuffer: opts.maxBuffer }, function (err, stdout, stderr) {
+    if (err) {
+      if (err.message === 'stdout maxBuffer exceeded') return cb(err)
+      return cb(null, NaN) // depending on the state of the git repo, the command might return non-0 exit code
+    }
+    stdout = stdout.trim()
+
+    var h = stdout.match(/\[behind ([^]+)\]/);
+    var hh = !h || !h[1] ? 0 : parseInt(h[1])
+    
+    console.log(hh);
+    cb(null, hh );
   })
 }
 
