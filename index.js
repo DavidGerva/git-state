@@ -27,13 +27,15 @@ exports.checkSync = function checkSync (repo, opts) {
   var ahead = exports.aheadSync(repo, opts)
   var status = statusSync(repo, opts)
   var stashes = exports.stashesSync(repo, opts)
+  var behind = exports.behindSync(repo, opts);
 
   return {
     branch: branch,
     ahead: ahead,
     dirty: status.dirty,
     untracked: status.untracked,
-    stashes: stashes
+    stashes: stashes,
+    behind: behind
   }
 }
 
@@ -43,6 +45,7 @@ exports.check = function check (repo, opts, cb) {
   var next = afterAll(function (err, results) {
     if (err) return cb(err)
 
+    console.log("BBB", results ) ;
     var branch = results[0]
     var ahead = results[1]
     var stashes = results[2]
